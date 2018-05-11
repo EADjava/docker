@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- 
+	logback.xml的基本配置信息都包含在configuration标签中，
+	需要含有至少一个appender标签用于指定日志输出方式和输出格式，
+	root标签为系统默认日志进程，通过level指定日志级别，
+	通过appender-ref关联前面指定顶的日志输出方式。
+ -->
+<!-- 定义 每隔10秒中扫描该文件 -->
+<configuration scan="true" scanPeriod="10 seconds" debug="false">
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+    <jmxConfigurator/>
+    <!--定义日志输出目录-->
+    <property name="LOG_HOME" value="boot-logs"/>
+    <!-- 控制台输出的日志格式 -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 按照登录用户的userId产生日志 -->
+    <appender name="SIFT" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <discriminator>
+            <Key>userId</Key>
+            <DefaultValue>unknown</DefaultValue>
+        </discriminator>
+        <sift>
+            <appender name="FILE-${userId}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                    <fileNamePattern>${LOG_HOME}/${userId}/${HOSTNAME}_%d{yyyyMMdd}.log</fileNamePattern>
+                </rollingPolicy>
+                <Append>false</Append>
+                <layout class="ch.qos.logback.classic.PatternLayout">
+                    <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+                </layout>
+            </appender>
+        </sift>
+    </appender>
+
+    <!-- 输出error log 至统一日志文件中 -->
+    <appender name="ERRORAPPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/error/${HOSTNAME}_%d{yyyy-MM-dd}.log</fileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 只打印ERROR日志 -->
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 设置日志（访问日志，系统日志）输出位置以及格式 -->
+    <appender name="INTERFACE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/interface/${HOSTNAME}_%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%date] [%thread] [%level] %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 只打印INFO日志 -->
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 输出URL访问日志 -->
+    <appender name="URLLOG" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <FileNamePattern>${LOG_HOME}/URL/${HOSTNAME}_%d{yyyy-MM-dd}.log</FileNamePattern>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%thread] [%date] [%level] %msg%n</pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 只打印INFO日志 -->
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+    <!-- access url -->
+    <appender name="mq_biz_url" class="ch.qos.logback.classic.sift.SiftingAppender">
+        <discriminator>
+            <Key>SYS_FLAG</Key>
+            <DefaultValue>unknown</DefaultValue>
+        </discriminator>
+        <sift>
+            <appender name="FILE-${userId}" class="ch.qos.logback.core.rolling.RollingFileAppender">
+                <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+                    <fileNamePattern>${LOG_HOME}/access/${SYS_FLAG}_%d{yyyyMMdd}.log</fileNamePattern>
+                </rollingPolicy>
+                <Append>false</Append>
+                <layout class="ch.qos.logback.classic.PatternLayout">
+                    <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} %msg%n</pattern>
+                </layout>
+            </appender>
+        </sift>
+    </appender>
+
+    <!-- 审计URL日志 -->
+    <appender name="ADUIT_URL_APPENDER" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_HOME}/aduit_logs/${HOSTNAME}_%d{yyyyMMdd}.log</fileNamePattern>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+
+        <filter class="ch.qos.logback.classic.filter.LevelFilter"><!-- 只打印ERROR日志 -->
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+    </appender>
+
+    <!-- 设置异常单独打印输出 -->
+    <logger name="com.jy" additivity="false">
+        <level value="ERROR"/>
+        <appender-ref ref="ERRORAPPENDER"/>
+    </logger>
+    <logger name="com.fintech" additivity="false">
+        <level value="ERROR"/>
+        <appender-ref ref="ERRORAPPENDER"/>
+    </logger>
+
+    <logger name="com.fintech.modules.platform.sysauth.session.JedisShiroSessionRepository" additivity="false">
+        <level value="ERROR"/>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+        <appender-ref ref="ERRORAPPENDER"/>
+    </logger>
+
+    <!-- 设置过滤访问日志类路径 -->
+    <logger name="com.fintech.modules.platform.sysauth.interceptor.ResourceInterceptor" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="INTERFACE"/>
+    </logger>
+    <!-- 输出URL访问日志 -->
+    <logger name="com.fintech.modules.platform.common.interceptor.URLInterceptor" additivity="false">
+        <level value="info"/>
+        <appender-ref ref="URLLOG"/>
+    </logger>
+
+    <!-- sql 的日志输出设置 -->
+    <logger name="java.sql.Connection" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+    <logger name="java.sql.Statement" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+    <logger name="java.sql.PreparedStatement" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+
+
+    <logger name="org.springframework.context" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+    <logger name="com.fintech.modules.platform.sysauth.session" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+
+    <logger name="org.apache.ibatis" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+
+    <logger name="com.fintech" level="DEBUG" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+    <logger name="com.jy" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </logger>
+
+    <logger name="com.fintech.modules.platform.common.interceptor.AuditURLInterceptor" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ADUIT_URL_APPENDER"/>
+    </logger>
+    <logger name="com.fintech.platform.core.common.BizLoggerUtil" level="INFO" additivity="false">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="ADUIT_URL_APPENDER"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="SIFT"/>
+    </root>
+
+</configuration>
